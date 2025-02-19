@@ -1,5 +1,6 @@
-import { Image, StyleSheet, Platform, View, Button, Text } from "react-native";
-
+import { Image, StyleSheet, Platform, View, Button, Text, TouchableOpacity } from "react-native";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import * as FileSystem from "expo-file-system";
 import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -21,9 +22,33 @@ const firebaseConfig = {
 
 export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
-  let [lastPhotosURI, setLastPhotosURI] = useState<string[]>([]);
+  const [lastPhotosURI, setLastPhotosURI] = useState<string[]>([]);
 
   const app = initializeApp(firebaseConfig);
+
+
+  const uploadImageToFirebase = async (uri: string) => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob(); // Convert local URI to Blob
+
+      const storage = getStorage();
+      const fileName = `image_${Date.now()}.jpg`; // Generate a unique name
+      const storageRef = ref(storage, `images/${fileName}`);
+
+      // Upload the file to Firebase Storage
+      await uploadBytes(storageRef, blob);
+
+      // Get the download URL
+      const downloadURL = await getDownloadURL(storageRef);
+
+      console.log("File uploaded successfully:", downloadURL);
+      return downloadURL; // Return the download URL
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      return null;
+    }
+  };
 
   if (!permission) {
     // Camera permissions are still loading.
@@ -110,13 +135,17 @@ export default function HomeScreen() {
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Last 3 photos you've taken:</ThemedText>
         {lastPhotosURI.length > 0 ? (
-          lastPhotosURI.map((lastPhotoURI) => {
+          lastPhotosURI.map((lastPhotoURI: string) => {
             return (
-              <Image
-                key={lastPhotoURI}
-                source={{ uri: lastPhotoURI }}
-                style={styles.lastPhoto}
-              />
+              <View key={lastPhotoURI}>
+                <Image
+                  source={{ uri: lastPhotoURI }}
+                  style={styles.lastPhoto}
+                />
+                {lastPhotoURI && <TouchableOpacity style={styles.button} onPress={()=>uploadImageToFirebase(lastPhotoURI)}>
+                  <Text style={styles.text}>Send Picture to Spark</Text>
+                </TouchableOpacity>}
+              </View>
             );
           })
         ) : (
@@ -131,7 +160,28 @@ export default function HomeScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
+  camera: {
+    flex: 1,
+    height: 290,
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "transparent",
+    margin: 64,
+  },
+  button: {
+    flex: 1,
+    alignSelf: "flex-end",
+    alignItems: "center",
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
+  },
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
