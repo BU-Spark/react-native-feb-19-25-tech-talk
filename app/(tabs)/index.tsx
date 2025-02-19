@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Platform, View, Button, Text, TouchableOpacity } from "react-native";
+import { Image, StyleSheet, Platform, View, Button, Text, TouchableOpacity, Alert } from "react-native";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import * as FileSystem from "expo-file-system";
 import { HelloWave } from "@/components/HelloWave";
@@ -43,8 +43,11 @@ export default function HomeScreen() {
       const downloadURL = await getDownloadURL(storageRef);
 
       console.log("File uploaded successfully:", downloadURL);
+      setLastPhotosURI((prevURIs) => prevURIs.filter((item) => item !== uri));
+      Alert.alert("Success", "Photo uploaded successfully.");
       return downloadURL; // Return the download URL
-    } catch (error) {
+    } catch (error : any) {
+      Alert.alert("Upload Failed", `Photo not uploaded: ${error.message || error}`);
       console.error("Error uploading image:", error);
       return null;
     }
