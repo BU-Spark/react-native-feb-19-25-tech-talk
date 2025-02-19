@@ -1,6 +1,7 @@
 import { CameraCapturedPicture, CameraType, CameraView } from "expo-camera";
 import { PropsWithChildren, useState } from "react";
 import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import * as FileSystem from 'expo-file-system';
 
 type Props = PropsWithChildren<{
   lastPhotosURI: string[];
@@ -15,9 +16,32 @@ export function Camera({ lastPhotosURI, setLastPhotosURI }: Props) {
     setFacing((current) => (current === "back" ? "front" : "back"));
   }
 
+  const logImageFileSize = async (uri: string) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      if (fileInfo.exists) {
+        const fileSizeMB = fileInfo.size ? fileInfo.size / (1024 * 1024) : 0;
+        console.log(`Image size: ${fileSizeMB.toFixed(2)} MB`);
+      } else {
+        console.warn('File does not exist at the given URI.');
+      }
+    } catch (error) {
+      console.error('Error fetching file info:', error);
+    }
+  };
+
   const takePicture = async () => {
-    const photo = await cameraRef.takePictureAsync();
-    onPictureSaved(photo);
+    const photo = await cameraRef.takePictureAsync(
+      { quality: 0.1 },
+    );
+    if (photo) {
+      // I want to log the size of the photo in mb. i only have base64 and uri strings of photos
+      if (photo.base64) console.log("photo size in mb: ", photo.base64.length / 1024 / 1024);
+      else if (photo.uri) logImageFileSize(photo.uri);
+      else console.log("size not found");
+      onPictureSaved(photo);
+    }
+    else console.log("No photo taken");
   };
 
   const onPictureSaved = (photo: CameraCapturedPicture) => {
@@ -34,7 +58,7 @@ export function Camera({ lastPhotosURI, setLastPhotosURI }: Props) {
         style={styles.camera}
         facing={facing}
         ref={(ref) => {
-          cameraRef = ref;
+          if (ref) cameraRef = ref;
         }}
       >
         <View style={styles.buttonContainer}>
