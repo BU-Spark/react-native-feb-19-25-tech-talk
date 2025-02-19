@@ -8,10 +8,22 @@ import { useState } from "react";
 import { useCameraPermissions } from "expo-camera";
 import { Camera } from "@/components/Camera";
 import { Footer } from "@/components/Footer";
+import { initializeApp } from "firebase/app";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD4LOnTg21X0IKsh2Ab7bM32HtcCzPrWz8",
+  authDomain: "se-asad-is-special.firebaseapp.com",
+  projectId: "se-asad-is-special",
+  storageBucket: "se-asad-is-special.appspot.com",
+  messagingSenderId: "445933065747",
+  appId: "1:445933065747:web:4177f3ecf5ae91cf4791e6"
+};
 
 export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   let [lastPhotosURI, setLastPhotosURI] = useState<string[]>([]);
+
+  const app = initializeApp(firebaseConfig);
 
   if (!permission) {
     // Camera permissions are still loading.
